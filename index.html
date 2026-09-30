@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="lo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ກອງທຶນ ທຄຕລ</title>
+<meta name="theme-color" content="#005ea8">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ກອງທຶນ">
+<style>
+  html,body{margin:0;height:100%;background:#005ea8;font-family:"Noto Sans Lao",system-ui,sans-serif}
+  #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+  #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;background:#005ea8;transition:opacity .3s}
+  #splash img{width:96px;height:96px;border-radius:22px}
+  #splash.hide{opacity:0;pointer-events:none}
+  #offline{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#fff;background:#005ea8;text-align:center;padding:24px}
+  #offline button{padding:10px 20px;border:0;border-radius:8px;font-size:16px}
+  #installBtn{display:none;position:fixed;right:16px;bottom:16px;z-index:9;padding:12px 18px;border:0;border-radius:24px;background:#ffc828;color:#003a68;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  #iosHint{display:none;position:fixed;left:12px;right:12px;bottom:max(16px,env(safe-area-inset-bottom));z-index:10;background:#fff;color:#1a1a1a;border-radius:16px;padding:16px 18px;box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:15px;line-height:1.6}
+  #iosHint b{color:#005ea8}
+  #iosHint .x{position:absolute;top:6px;right:10px;border:0;background:none;font-size:22px;color:#888}
+  #iosHint:after{content:"";position:absolute;bottom:-10px;left:50%;margin-left:-10px;border:10px solid transparent;border-bottom:0;border-top-color:#fff}
+</style>
+</head>
+<body>
+<!-- ==========================================================
+     ✏️ ແກ້ URL ຂອງ GAS Web App ຢູ່ບ່ອນນີ້ບ່ອນດຽວ (ລົງທ້າຍດ້ວຍ /exec)
+     ========================================================== -->
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwtGwCSMOhJLpjUvOpoB0Oih93UOrRTxmXb2FRd4tKwy2-3jRvv_0aCQN2-vAnrHjV9VQ/exec";
+</script>
+
+<div id="splash"><img src="icons/icon-192.png" alt=""><div>ກຳລັງໂຫຼດ...</div></div>
+<div id="offline"><div style="font-size:48px">📡</div><div>ບໍ່ມີອິນເຕີເນັດ</div><button onclick="location.reload()">ລອງໃໝ່</button></div>
+<iframe id="app" allow="clipboard-write; camera; geolocation"></iframe>
+<button id="installBtn">⬇ ຕິດຕັ້ງແອັບ</button>
+<div id="iosHint"><button class="x" onclick="this.parentNode.style.display='none'">×</button>
+  <div style="font-weight:700;margin-bottom:6px">📲 ຕິດຕັ້ງແອັບ ກອງທຶນ ໃນ iPhone</div>
+  1. ກົດປຸ່ມ <b>Share</b> <span style="font-size:18px">⎋</span> (ຮູບກ່ອງມີລູກສອນຂຶ້ນ) ຢູ່ລຸ່ມຈໍ<br>
+  <span style="font-size:13px;color:#666">&nbsp;&nbsp;&nbsp;(ຖ້າບໍ່ເຫັນ ໃຫ້ກົດ <b>⋯</b> ກ່ອນ ແລ້ວຈຶ່ງກົດ Share)</span><br>
+  2. ເລື່ອນລົງ ກົດ <b>Add to Home Screen</b> (ເພີ່ມໃສ່ໜ້າຈໍໂຮມ)<br>
+  3. ກົດ <b>Add</b> ມຸມຂວາເທິງ
+</div>
+
+<script>
+  const frame = document.getElementById('app');
+  const splash = document.getElementById('splash');
+
+  function load() {
+    if (!navigator.onLine) { document.getElementById('offline').style.display = 'flex'; return; }
+    // ສົ່ງ query string ຕໍ່ໄປໃຫ້ GAS (ເຊັ່ນ ?page=report)
+    frame.src = GAS_URL + (location.search ? location.search + '&' : '?') + 'app=1';
+    frame.onload = () => splash.classList.add('hide');
+    setTimeout(() => splash.classList.add('hide'), 8000);
+  }
+  window.addEventListener('online', () => location.reload());
+  load();
+
+  // Service worker
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+  // ປຸ່ມ Install (Android/Chrome/Edge)
+  let deferred;
+  const btn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; btn.style.display = 'block'; });
+  btn.onclick = async () => { btn.style.display = 'none'; deferred.prompt(); deferred = null; };
+  window.addEventListener('appinstalled', () => btn.style.display = 'none');
+
+  // iPhone/iPad: ບໍ່ມີປຸ່ມ Install ອັດຕະໂນມັດ → ສະແດງຄຳແນະນຳ (ສະເພາະຕອນຍັງບໍ່ໄດ້ຕິດຕັ້ງ)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !standalone) setTimeout(() => document.getElementById('iosHint').style.display = 'block', 1500);
+</script>
+</body>
+</html>
